@@ -17,8 +17,8 @@ from src.ui.terminal import TerminalUI
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Live Public Transport Information Terminal")
     parser.add_argument("--line", type=str, help="Filter by line number")
-    parser.add_argument("--limit", type=int, default=20, help="Limit number of vehicles shown")
-    parser.add_argument("--refresh", type=float, default=1.0, help="Refresh rate in seconds")
+    parser.add_argument("--limit", type=int, default=10, help="Limit number of vehicles shown")
+    parser.add_argument("--refresh", type=int, default=4, help="Refresh rate in seconds")
     parser.add_argument("--debug", action="store_true", help="Show debug messages for binary data")
     
     # Network options
@@ -169,7 +169,7 @@ def main():
                         if client.stats["xml_messages"] in [1, 10, 50, 100]:
                             save_schema_model(schema_model, f"{args.schema_file}.{client.stats['xml_messages']}")
                 
-                # Update the UI
+                # Update the UI (only refresh if significant changes occurred)
                 extra_status = {}
                 if args.schema:
                     extra_status["Schema"] = "Enabled"

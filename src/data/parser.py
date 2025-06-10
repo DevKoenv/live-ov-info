@@ -65,10 +65,21 @@ def parse_kv6_message(xml_content: str) -> Tuple[List[Dict[str, Any]], Dict[str,
         if 'VV_TM_PUSH' in data and 'KV6posinfo' in data['VV_TM_PUSH']:
             kv6 = data['VV_TM_PUSH']['KV6posinfo']
             
-            # Process different message types
-            known_types = ['ARRIVAL', 'DEPARTURE', 'ONROUTE', 'ONSTOP']
+            # Enhanced message types based on BISON TMI8 specification
+            known_types = [
+                'ARRIVAL',    # Aankomst (halte)
+                'DEPARTURE',  # Vertrek (halte)
+                'ONROUTE',    # Positie Info (onderweg)
+                'ONSTOP',     # Op halte (stil)
+                'INIT',       # Rit Selectie/Start
+                'END',        # Rit Ontkoppeling/Einde
+                'DELAY',      # Rit Vertraagd
+                'OFFROUTE',   # Van route af
+                'CANCEL'      # Rit geannuleerd
+            ]
+            
             found_types = set(kv6.keys()) if isinstance(kv6, dict) else set()
-            unknown_types = [t for t in found_types if t not in known_types]
+            unknown_types = [t for t in found_types if t not in known_types and not t.startswith('_')]
             
             if unknown_types:
                 stats["unknown_types"] = unknown_types
