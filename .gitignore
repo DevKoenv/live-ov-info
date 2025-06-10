@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+**/__pycache__/
+ndov_client_errors.log
+cache/
+xml_data/
