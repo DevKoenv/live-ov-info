@@ -1,0 +1,20 @@
+# Core networking and messaging
+pyzmq>=25.0.0
+
+# XML processing and data handling
+xmltodict>=0.13.0
+
+# Terminal UI and rich formatting
+rich>=13.0.0
+
+# HTTP requests for reference data
+requests>=2.31.0
+
+# Data processing and validation
+dataclasses-json>=0.6.0
+
+# Coordinate transformations (if needed for stop locations)
+pyproj>=3.6.0
+
+# Date/time utilities (usually built-in, but sometimes needed)
+python-dateutil>=2.8.0

@@ -1,0 +1,23 @@
+## Actuele OV-voertuigposities (bus, tram, metro)
+https://ntm.ndw.nu/publicaties/cd33454b-a612-45d5-9f83-7e8168969170
+
+## Actuele OV-voertuigposities (NS-treinen)
+https://ntm.ndw.nu/publicaties/3796d4aa-4ae6-43f5-bd75-89c9476f0a45
+
+## Dienstregelingen van het Nederlandse Openbaar Vervoer
+https://ntm.ndw.nu/publicaties/e77b0369-579a-40df-804f-503e5332b21f
+https://ntm.ndw.nu/publicaties/6f23b942-6dea-48b4-a7bb-b875f566f296
+
+## NDOV Loket Data
+https://data.ndovloket.nl/
+https://data.ndovloket.nl/REALTIME.TXT
+
+NDOV Netex Directory
+https://data.ndovloket.nl/netex/
+
+## Haltes- en Stationslocaties
+https://data.ndovloket.nl/netex/epiap/
+https://data.ndovloket.nl/haltes/
+
+## Busposities.nl (Debug XML Numbers manually)
+https://busposities.nl
