@@ -10,11 +10,8 @@ rich>=13.0.0
 # HTTP requests for reference data
 requests>=2.31.0
 
-# Data processing and validation
-dataclasses-json>=0.6.0
-
-# Coordinate transformations (if needed for stop locations)
+# Coordinate transformations for RD to WGS84 conversion
 pyproj>=3.6.0
 
-# Date/time utilities (usually built-in, but sometimes needed)
+# Date/time utilities
 python-dateutil>=2.8.0

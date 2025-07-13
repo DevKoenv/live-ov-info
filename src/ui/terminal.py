@@ -111,17 +111,24 @@ Subscribed to topics:
         
         return Panel(header_text, border_style="blue")
     
-    def update(self, vehicles, stats, errors, topic, line_filter=None, limit=20, extra_status=None):
+    def update(self, vehicles, stats, errors, topic, line_filter=None, limit=20, extra_status=None, view_collection="active"):
         """Update the display with new data"""
         if not self.live or not self.running:
             return
         
         try:
-            # Get filtered vehicles
-            filtered_vehicles = vehicles.get_filtered(line=line_filter, limit=limit)
+            # Get filtered vehicles from specified collection
+            if view_collection == "all":
+                # Show all vehicles from all collections
+                filtered_vehicles = vehicles.get_all_vehicles()
+                if line_filter:
+                    filtered_vehicles = [(vid, v) for vid, v in filtered_vehicles if v.line == line_filter]
+                filtered_vehicles = sorted(filtered_vehicles)[:limit] if limit > 0 else sorted(filtered_vehicles)
+            else:
+                filtered_vehicles = vehicles.get_filtered(line=line_filter, limit=limit, collection=view_collection)
             
             # Create table and status panel (header updates separately)
-            table = self._create_vehicle_table(filtered_vehicles, vehicles, line_filter, limit)
+            table = self._create_vehicle_table(filtered_vehicles, vehicles, line_filter, limit, view_collection)
             status_panel = self._create_status_panel(stats, errors, vehicles, line_filter, extra_status)
             
             # Update layout (skip header as it updates automatically)
@@ -133,7 +140,7 @@ Subscribed to topics:
             if self.running:
                 self.console.print(f"[red]Display update error: {e}[/red]")
     
-    def _create_vehicle_table(self, filtered_vehicles, vehicles, line_filter, limit):
+    def _create_vehicle_table(self, filtered_vehicles, vehicles, line_filter, limit, view_collection="active"):
         """Create the vehicle table"""
         table = Table(
             show_header=True, 
@@ -151,13 +158,31 @@ Subscribed to topics:
         table.add_column("Position", style="white", no_wrap=False, min_width=20)
         table.add_column("Updated", style="dim", no_wrap=False, min_width=8)
         
-        # Create table title
-        table_title = f"Live Vehicles ({len(filtered_vehicles)}"
+        # Create table title with collection info
+        collection_stats = vehicles.get_collection_stats()
+        
+        # Customize title based on view
+        if view_collection == "active":
+            table_title = f"Active Vehicles ({len(filtered_vehicles)}"
+            if limit and collection_stats["active"] > limit:
+                table_title += f" of {collection_stats['active']}"
+        elif view_collection == "initialized":
+            table_title = f"Initialized Vehicles ({len(filtered_vehicles)}"
+            if limit and collection_stats["initialized"] > limit:
+                table_title += f" of {collection_stats['initialized']}"
+        elif view_collection == "finished":
+            table_title = f"Finished Vehicles ({len(filtered_vehicles)}"
+            if limit and collection_stats["finished"] > limit:
+                table_title += f" of {collection_stats['finished']}"
+        else:  # all
+            table_title = f"All Vehicles ({len(filtered_vehicles)}"
+            if limit and collection_stats["total"] > limit:
+                table_title += f" of {collection_stats['total']}"
+        
         if line_filter:
             table_title += f" - Line {line_filter}"
-        if limit and len(vehicles) > limit:
-            table_title += f" of {len(vehicles)}"
-        table_title += ")"
+        
+        table_title += f") | A:{collection_stats['active']} I:{collection_stats['initialized']} F:{collection_stats['finished']}"
         
         table.title = table_title
         table.title_style = "bold blue"
@@ -187,12 +212,14 @@ Subscribed to topics:
     
     def _create_status_panel(self, stats, errors, vehicles, line_filter, extra_status):
         """Create the status panel"""
+        collection_stats = vehicles.get_collection_stats()
+        
         status_parts = [
             f"Total: {stats['total_messages']}",
             f"XML: {stats['xml_messages']}",
             f"Binary: {stats['binary_messages']}",
             f"Updates: {stats['vehicle_updates']}",
-            f"Vehicles: {len(vehicles)}"
+            f"Vehicles: {collection_stats['total']} (A:{collection_stats['active']}/I:{collection_stats['initialized']}/F:{collection_stats['finished']})"
         ]
         
         if extra_status:

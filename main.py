@@ -11,6 +11,7 @@ from datetime import datetime
 from src.data.models import Vehicle, VehicleCollection
 from src.data.parser import save_debug_message, update_schema_model, save_schema_model
 from src.data.references import ReferenceData
+from src.data.export import VehicleExporter
 from src.network.client import NDOVClient
 from src.ui.terminal import TerminalUI
 
@@ -20,6 +21,8 @@ def parse_arguments():
     parser.add_argument("--limit", type=int, default=10, help="Limit number of vehicles shown")
     parser.add_argument("--refresh", type=int, default=4, help="Refresh rate in seconds")
     parser.add_argument("--debug", action="store_true", help="Show debug messages for binary data")
+    parser.add_argument("--view", type=str, choices=["active", "initialized", "finished", "all"], 
+                       default="active", help="Which vehicle collection to display (default: active)")
     
     # Network options
     parser.add_argument("--operators", type=str, nargs="+", default=["arriva"], 
@@ -34,6 +37,14 @@ def parse_arguments():
     parser.add_argument("--schema", action="store_true", help="Generate XML schema documentation (default: disabled)")
     parser.add_argument("--schema-file", type=str, default="xml_schema.json", help="File to save discovered XML schema")
     parser.add_argument("--no-reference-data", action="store_true", help="Disable automatic reference data loading")
+    
+    # Export options
+    parser.add_argument("--export-csv", action="store_true", help="Export all vehicles to CSV file")
+    parser.add_argument("--export-json", action="store_true", help="Export all vehicles to JSON file")
+    parser.add_argument("--export-stats", action="store_true", help="Export summary statistics to CSV")
+    parser.add_argument("--export-bison", action="store_true", help="Export BISON TMI8 compliant CSV files (3 files: future, active, finished)")
+    parser.add_argument("--export-interval", type=int, default=300, help="Export interval in seconds (default: 5 minutes)")
+    parser.add_argument("--export-dir", type=str, default="exports", help="Directory for export files")
     
     return parser.parse_args()
 
@@ -96,6 +107,13 @@ def main():
     
     # Initialize vehicle collection
     vehicles = VehicleCollection()
+    
+    # Initialize exporter if export options are enabled
+    exporter = None
+    last_export_time = time.time()
+    if args.export_csv or args.export_json or args.export_stats or args.export_bison:
+        exporter = VehicleExporter(output_dir=args.export_dir)
+        ui.print_info(f"Export enabled - files will be saved to '{args.export_dir}' directory")
     
     # Schema model to document XML structure (only if enabled)
     schema_model = {} if args.schema else None
@@ -160,6 +178,10 @@ def main():
                         # Add to collection
                         vehicles.add_or_update(vehicle)
                 
+                # Cleanup old finished vehicles periodically (every 100 messages)
+                if client.stats["total_messages"] % 100 == 0:
+                    vehicles.cleanup_old_finished(max_finished=500)
+                
                 # Update schema model if enabled
                 if args.schema and schema_model is not None and messages:
                     for msg in messages:
@@ -186,8 +208,49 @@ def main():
                     topic=str(client.topics),
                     line_filter=args.line,
                     limit=args.limit,
-                    extra_status=extra_status
+                    extra_status=extra_status,
+                    view_collection=args.view
                 )
+                
+                # Handle exports at specified intervals
+                current_time = time.time()
+                if exporter and (current_time - last_export_time) >= args.export_interval:
+                    try:
+                        export_count = 0
+                        
+                        if args.export_csv:
+                            filepath, count = exporter.export_to_csv(vehicles)
+                            if filepath:
+                                ui.print_success(f"Exported {count} vehicles to CSV: {filepath}")
+                                export_count += count
+                        
+                        if args.export_json:
+                            filepath, count = exporter.export_to_json(vehicles)
+                            if filepath:
+                                ui.print_success(f"Exported {count} vehicles to JSON: {filepath}")
+                                export_count += count
+                        
+                        if args.export_stats:
+                            filepath, count = exporter.export_summary_stats(vehicles)
+                            if filepath:
+                                ui.print_success(f"Exported summary stats for {count} vehicles: {filepath}")
+                        
+                        if args.export_bison:
+                            results = exporter.export_bison_tmi8_sets(vehicles)
+                            if results:
+                                ui.print_success(f"BISON TMI8 Export completed:")
+                                for export_type, (filepath, count) in results.items():
+                                    if filepath:
+                                        ui.print_success(f"  {export_type.title()}: {count} records → {filepath}")
+                        
+                        last_export_time = current_time
+                        
+                        # Update status to show export info
+                        if export_count > 0:
+                            extra_status["Last Export"] = f"{export_count} vehicles at {datetime.now().strftime('%H:%M:%S')}"
+                            
+                    except Exception as e:
+                        client.record_error(f"Export error: {e}")
                 
             except KeyboardInterrupt:
                 raise
