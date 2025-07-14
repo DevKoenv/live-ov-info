@@ -1,0 +1,26 @@
+{
+  "name": "live-ov-info-typescript",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
+    "dotenv": "^17.2.0",
+    "typescript": "^5.0.0",
+    "xml2js": "^0.6.2",
+    "zeromq": "^6.5.0"
+  },
+  "devDependencies": {
+    "@types/blessed": "^0.1.25",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.13",
+    "@types/ws": "^8.18.1",
+    "@types/xml2js": "^0.4.14",
+    "tsx": "^4.9.0"
+  }
+}
