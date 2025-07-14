@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live OV Info - Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Courier New", monospace;
+        background-color: #1a1a1a;
+        color: #ffffff;
+        padding: 20px;
+        line-height: 1.4;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        border-radius: 10px;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .timestamp {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: #2c3e50;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #3498db;
+        transition: transform 0.2s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        text-transform: uppercase;
+      }
+
+      .status-summary {
+        background: #34495e;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 1.1rem;
+      }
+
+      .tabs {
+        display: flex;
+        margin-bottom: 20px;
+        background: #2c3e50;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 15px;
+        background: #2c3e50;
+        border: none;
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+      }
+
+      .tab.active {
+        background: #3498db;
+      }
+
+      .tab:hover {
+        background: #34495e;
+      }
+
+      .tab.active:hover {
+        background: #2980b9;
+      }
+
+      .content {
+        background: #2c3e50;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #34495e;
+      }
+
+      th {
+        background: #34495e;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      tr:hover {
+        background: rgba(52, 152, 219, 0.1);
+      }
+
+      .status {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+
+      .status-arrival {
+        background: #27ae60;
+        color: white;
+      }
+      .status-departure {
+        background: #e74c3c;
+        color: white;
+      }
+      .status-onroute {
+        background: #3498db;
+        color: white;
+      }
+      .status-onstop {
+        background: #f39c12;
+        color: white;
+      }
+      .status-init {
+        background: #9b59b6;
+        color: white;
+      }
+      .status-end {
+        background: #7f8c8d;
+        color: white;
+      }
+      .status-delay {
+        background: #e74c3c;
+        color: white;
+        animation: pulse 1s infinite;
+      }
+      .status-offroute {
+        background: #e67e22;
+        color: white;
+      }
+      .status-cancel {
+        background: #c0392b;
+        color: white;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      .occupancy {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+      }
+
+      .occupancy-0 {
+        background: #1abc9c;
+        color: white;
+      } /* Empty */
+      .occupancy-1 {
+        background: #2ecc71;
+        color: white;
+      } /* Many Seats */
+      .occupancy-2 {
+        background: #27ae60;
+        color: white;
+      } /* Seats Available */
+      .occupancy-3 {
+        background: #f39c12;
+        color: white;
+      } /* Standing Room */
+      .occupancy-4 {
+        background: #e74c3c;
+        color: white;
+      } /* Limited Standing */
+      .occupancy-5 {
+        background: #c0392b;
+        color: white;
+      } /* Full */
+
+      .connection-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        z-index: 1000;
+      }
+
+      .connected {
+        background: #27ae60;
+        color: white;
+      }
+      .connecting {
+        background: #f39c12;
+        color: white;
+      }
+      .disconnected {
+        background: #e74c3c;
+        color: white;
+      }
+
+      .line-card {
+        background: #34495e;
+        margin: 10px 0;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .line-header {
+        padding: 15px;
+        background: #3498db;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .line-header:hover {
+        background: #2980b9;
+      }
+
+      .line-details {
+        padding: 15px;
+        display: none;
+      }
+
+      .line-details.active {
+        display: block;
+      }
+
+      .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 10px;
+      }
+
+      .vehicle-card {
+        background: #2c3e50;
+        padding: 10px;
+        border-radius: 6px;
+        border-left: 4px solid #3498db;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        font-size: 1.2rem;
+        opacity: 0.7;
+      }
+
+      .error {
+        background: #e74c3c;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+      }
+
+      @media (max-width: 768px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .tabs {
+          flex-direction: column;
+        }
+
+        table {
+          font-size: 0.8rem;
+        }
+
+        th,
+        td {
+          padding: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="connection-status" id="connection-status">Connecting...</div>
+
+    <div class="header">
+      <h1>🚌 Live OV Info Dashboard</h1>
+      <div class="timestamp" id="current-time"></div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="total-vehicles">0</div>
+        <div class="stat-label">Total Vehicles</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="active-vehicles">0</div>
+        <div class="stat-label">Active Vehicles</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="total-lines">0</div>
+        <div class="stat-label">Active Lines</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="last-update">Never</div>
+        <div class="stat-label">Last Update</div>
+      </div>
+    </div>
+
+    <div class="status-summary" id="status-summary">
+      Loading vehicle information...
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('vehicles')">
+        All Vehicles
+      </button>
+      <button class="tab" onclick="showTab('lines')">By Line</button>
+    </div>
+
+    <div class="content">
+      <div id="vehicles-tab" class="tab-content">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Vehicle</th>
+                <th>Line</th>
+                <th>Status</th>
+                <th>Stop</th>
+                <th>Occupancy</th>
+                <th>Position</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="vehicles-table">
+              <tr>
+                <td colspan="7" class="loading">Loading vehicles...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="lines-tab" class="tab-content" style="display: none">
+        <div id="lines-container">
+          <div class="loading">Loading lines...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let eventSource = null;
+      let vehicles = [];
+      let lines = [];
+
+      // Initialize the dashboard
+      function init() {
+        updateTime();
+        setInterval(updateTime, 1000);
+        connectSSE();
+      }
+
+      // Update current time display
+      function updateTime() {
+        const now = new Date();
+        const timeStr =
+          now.toISOString().replace("T", " ").substring(0, 19) + " UTC";
+        document.getElementById("current-time").textContent = timeStr;
+      }
+
+      // Connect to Server-Sent Events
+      function connectSSE() {
+        if (eventSource) {
+          eventSource.close();
+        }
+
+        updateConnectionStatus("connecting");
+        eventSource = new EventSource("/api/stream");
+
+        eventSource.onopen = function () {
+          updateConnectionStatus("connected");
+        };
+
+        eventSource.addEventListener("connected", function (event) {
+          const data = JSON.parse(event.data);
+          updateConnectionStatus("connected");
+        });
+
+        eventSource.addEventListener("initial_data", function (event) {
+          const data = JSON.parse(event.data);
+          vehicles = data.vehicles || [];
+          updateDisplay();
+        });
+
+        eventSource.addEventListener("vehicle_update", function (event) {
+          const data = JSON.parse(event.data);
+          updateVehicle(data.update);
+          updateLastUpdate();
+        });
+
+        eventSource.addEventListener("status_update", function (event) {
+          const data = JSON.parse(event.data);
+          updateStats(data.counts);
+        });
+
+        eventSource.onerror = function () {
+          updateConnectionStatus("disconnected");
+          setTimeout(connectSSE, 5000); // Retry connection
+        };
+      }
+
+      // Update connection status
+      function updateConnectionStatus(status) {
+        const element = document.getElementById("connection-status");
+        element.className = "connection-status " + status;
+        element.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      }
+
+      // Update vehicle in the local array
+      function updateVehicle(update) {
+        const index = vehicles.findIndex(
+          (v) => v.vehicleNumber === update.vehicleNumber
+        );
+        if (index >= 0) {
+          // Update existing vehicle
+          vehicles[index] = {
+            ...vehicles[index],
+            status: update.type,
+            lastUpdated: new Date(update.timestamp),
+            lineNumber: update.lineNumber || vehicles[index].lineNumber,
+            ...(update.stopCode && { stopCode: update.stopCode }),
+            ...(update.latitude && { latitude: update.latitude }),
+            ...(update.longitude && { longitude: update.longitude }),
+            ...(update.occupancy !== undefined && {
+              occupancy: update.occupancy,
+            }),
+            ...(update.punctuality !== undefined && {
+              punctuality: update.punctuality,
+            }),
+          };
+        } else {
+          // Add new vehicle
+          vehicles.push({
+            vehicleNumber: update.vehicleNumber,
+            lineNumber: update.lineNumber || "Unknown",
+            status: update.type,
+            stopCode: update.stopCode,
+            latitude: update.latitude,
+            longitude: update.longitude,
+            occupancy: update.occupancy,
+            punctuality: update.punctuality,
+            lastUpdated: new Date(update.timestamp),
+          });
+        }
+        updateDisplay();
+      }
+
+      // Update the entire display
+      function updateDisplay() {
+        updateStats();
+        updateVehiclesTable();
+        updateLinesView();
+        updateStatusSummary();
+      }
+
+      // Update statistics
+      function updateStats(counts) {
+        if (!counts) {
+          counts = calculateCounts();
+        }
+
+        document.getElementById("total-vehicles").textContent =
+          counts.total || 0;
+        document.getElementById("active-vehicles").textContent =
+          counts.active || 0;
+
+        const uniqueLines = new Set(vehicles.map((v) => v.lineNumber)).size;
+        document.getElementById("total-lines").textContent = uniqueLines;
+      }
+
+      // Calculate counts from vehicles array
+      function calculateCounts() {
+        const counts = {
+          total: vehicles.length,
+          active: 0,
+          ARRIVAL: 0,
+          DEPARTURE: 0,
+          ONROUTE: 0,
+          ONSTOP: 0,
+          INIT: 0,
+          END: 0,
+          DELAY: 0,
+          OFFROUTE: 0,
+          CANCEL: 0,
+        };
+
+        vehicles.forEach((vehicle) => {
+          if (
+            ["ARRIVAL", "DEPARTURE", "ONROUTE", "ONSTOP"].includes(
+              vehicle.status
+            )
+          ) {
+            counts.active++;
+          }
+          counts[vehicle.status] = (counts[vehicle.status] || 0) + 1;
+        });
+
+        return counts;
+      }
+
+      // Update last update time
+      function updateLastUpdate() {
+        document.getElementById("last-update").textContent =
+          new Date().toLocaleTimeString();
+      }
+
+      // Update status summary
+      function updateStatusSummary() {
+        const counts = calculateCounts();
+        const summary = `Active Vehicles (${counts.active} of ${counts.total}) | A:${counts.ARRIVAL || 0} I:${counts.INIT || 0} D:${counts.DEPARTURE || 0}`;
+        document.getElementById("status-summary").textContent = summary;
+      }
+
+      // Update vehicles table
+      function updateVehiclesTable() {
+        const tbody = document.getElementById("vehicles-table");
+
+        if (vehicles.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="7" class="loading">No vehicles available</td></tr>';
+          return;
+        }
+
+        // Sort vehicles by vehicle number
+        const sortedVehicles = [...vehicles].sort((a, b) =>
+          a.vehicleNumber.localeCompare(b.vehicleNumber)
+        );
+
+        tbody.innerHTML = sortedVehicles
+          .slice(0, 50)
+          .map(
+            (vehicle) => `
+              <tr>
+                  <td>${vehicle.vehicleNumber}</td>
+                  <td>${vehicle.lineNumber}</td>
+                  <td><span class="status status-${vehicle.status.toLowerCase()}">${vehicle.status}</span></td>
+                  <td>${vehicle.stopCode || ''}</td>
+                  <td>${formatOccupancy(vehicle.occupancy)}</td>
+                  <td>${formatPosition(vehicle.latitude, vehicle.longitude)}</td>
+                  <td>${formatTime(vehicle.lastUpdated)}</td>
+              </tr>
+          `
+          )
+          .join("");
+      }
+
+      // Update lines view
+      function updateLinesView() {
+        const container = document.getElementById("lines-container");
+
+        if (vehicles.length === 0) {
+          container.innerHTML = '<div class="loading">No lines available</div>';
+          return;
+        }
+
+        // Group vehicles by line
+        const lineGroups = {};
+        vehicles.forEach((vehicle) => {
+          if (!lineGroups[vehicle.lineNumber]) {
+            lineGroups[vehicle.lineNumber] = [];
+          }
+          lineGroups[vehicle.lineNumber].push(vehicle);
+        });
+
+        // Sort lines
+        const sortedLines = Object.keys(lineGroups).sort();
+
+        container.innerHTML = sortedLines
+          .map((lineNumber) => {
+            const lineVehicles = lineGroups[lineNumber];
+            const activeCount = lineVehicles.filter((v) =>
+              ["ARRIVAL", "DEPARTURE", "ONROUTE", "ONSTOP"].includes(v.status)
+            ).length;
+
+            return `
+                  <div class="line-card">
+                      <div class="line-header" onclick="toggleLine('${lineNumber}')">
+                          <div>
+                              <strong>Line ${lineNumber}</strong>
+                              <span style="opacity: 0.8; margin-left: 10px;">
+                                  ${activeCount}/${lineVehicles.length} active
+                              </span>
+                          </div>
+                          <div>▼</div>
+                      </div>
+                      <div class="line-details" id="line-${lineNumber}">
+                          <div class="vehicle-grid">
+                              ${lineVehicles.map(vehicle => `
+                                  <div class="vehicle-card">
+                                      <div><strong>Vehicle ${vehicle.vehicleNumber}</strong></div>
+                                      <div><span class="status status-${vehicle.status.toLowerCase()}">${vehicle.status}</span></div>
+                                      <div>Stop: ${vehicle.stopCode || 'Unknown'}</div>
+                                      <div>Updated: ${formatTime(vehicle.lastUpdated)}</div>
+                                      ${vehicle.occupancy !== undefined ? `<div>Occupancy: ${formatOccupancyText(vehicle.occupancy)}</div>` : ''}
+                                  </div>
+                              `).join('')}
+                          </div>
+                      </div>
+                  </div>
+              `;
+          })
+          .join("");
+      }
+
+      // Format occupancy for display
+      function formatOccupancy(occupancy) {
+        if (occupancy === undefined) return "";
+
+        const occupancyMap = {
+          0: "Empty",
+          1: "Many Seats",
+          2: "Seats Available",
+          3: "Standing Room",
+          4: "Limited Standing",
+          5: "Full",
+        };
+
+        const text = occupancyMap[occupancy] || "Unknown";
+        return `<span class="occupancy occupancy-${occupancy}">${text}</span>`;
+      }
+
+      // Format occupancy as text only
+      function formatOccupancyText(occupancy) {
+        const occupancyMap = {
+          0: "Empty",
+          1: "Many Seats",
+          2: "Seats Available",
+          3: "Standing Room",
+          4: "Limited Standing",
+          5: "Full",
+        };
+        return occupancyMap[occupancy] || "Unknown";
+      }
+
+      // Format position
+      function formatPosition(lat, lng) {
+        if (!lat || !lng) return "Unknown";
+        return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      }
+
+      // Format time
+      function formatTime(date) {
+        if (!date) return "";
+        return new Date(date).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
+      }
+
+      // Show specific tab
+      function showTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        event.target.classList.add("active");
+
+        // Show/hide content
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.style.display = "none";
+        });
+        document.getElementById(tabName + "-tab").style.display = "block";
+      }
+
+      // Toggle line details
+      function toggleLine(lineNumber) {
+        const details = document.getElementById("line-" + lineNumber);
+        details.classList.toggle("active");
+      }
+
+      // Start the application
+      init();
+    </script>
+  </body>
+</html>

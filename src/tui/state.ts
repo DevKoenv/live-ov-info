@@ -1,4 +1,5 @@
 import { KV6MessageType, type KV6Update } from '@/types/kv6';
+import { eventBus, EventName } from '@/core/event-bus';
 
 /**
  * Represents a vehicle's current state
@@ -23,6 +24,12 @@ export interface VehicleState {
 export class VehicleStateManager {
   private vehicles: Map<string, VehicleState> = new Map();
 
+  constructor() {
+    eventBus.on(EventName.KV6_UPDATE, (update: KV6Update) => {
+      this.updateVehicle(update);
+    });
+  }
+
   /**
    * Update vehicle state based on incoming KV6 message
    */
@@ -32,7 +39,6 @@ export class VehicleStateManager {
       
       // Safety check - skip updates with missing vehicle number
       if (!vehicleNumber) {
-        // console.warn('Received update with missing vehicle number:', update);`
         return;
       }
       
