@@ -1,8 +1,12 @@
 import NDOVConnector from "@/core/connector";
+import createTUI from "@/tui";
 
 // Create topic and endpoint constants
 const TOPIC = "/ARR/KV6posinfo";
 const ENDPOINT = "tcp://pubsub.besteffort.ndovloket.nl:7658";
+
+// Initialize the TUI
+const tui = createTUI();
 
 // Create and start the ZMQ connector
 const connector = new NDOVConnector(TOPIC, ENDPOINT);
@@ -13,6 +17,7 @@ connector.connect().catch((error) => {
 
 // Handle process termination
 process.on("SIGINT", async () => {
+  tui.cleanup();
   await connector.disconnect();
   process.exit(0);
 });
